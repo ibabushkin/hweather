@@ -19,6 +19,7 @@ readWrapper s = fromMaybe
 
 -- not many right now
 data Options = Options { optUnit :: !Fetch.Unit
+                       , optNumDays :: Int
                        , optAPIKey :: String
                        , optLocation :: !Fetch.Location
                        , optOutput :: String -> IO ()
@@ -27,6 +28,7 @@ data Options = Options { optUnit :: !Fetch.Unit
 
 defaultOptions :: Options
 defaultOptions = Options { optUnit = Fetch.Default
+                         , optNumDays = 1
                          , optAPIKey = ""
                          , optLocation = Fetch.City "Berlin" "de"
                          , optOutput = putStrLn
@@ -42,6 +44,14 @@ options =
         "Units to use. Possible values are:\n\
         \'Default' (°K, m/s), 'Metric' (°C, m/s)\n\
         \and 'Imperial' (°F, mph)"
+
+    , Option "n" ["numdays"]
+        (ReqArg
+            (\arg opt -> return opt { optNumDays = let n = readWrapper arg
+                                                    in if n > 5 then 5 else n })
+            "NUMBER")
+        "Number of days to display the forecast for.\n\
+        \Should be between 0 and 5, defaults to 1"
 
     , Option "a" ["api-key"]
         (ReqArg
@@ -100,7 +110,7 @@ options =
         (NoArg
             (\_ -> do
                 prg <- getProgName
-                let header = prg ++ " version 0.1\nUSAGE: " ++
+                let header = prg ++ " version 0.2\nUSAGE: " ++
                         prg ++ " [OPTION..]\nOPTIONS:" 
                 hPutStrLn stderr (usageInfo header options)
                 exitSuccess))
@@ -115,6 +125,7 @@ main = do
     opts <- foldl (>>=) (return defaultOptions) actions
     let Options { optUnit = unit
                 , optAPIKey = apiKey
+                , optNumDays = n
                 , optLocation = location
                 , optOutput = output
                 , optFormat = format
@@ -125,6 +136,9 @@ main = do
     let weather = decode json :: Maybe Forecast
     if isJust weather
        -- le ugly hack below, think about a replacement
-       then output (formatForecast format unit (fromMaybe (undefined) weather))
+       then do let weather' = (fromMaybe (undefined) weather)
+                   weather'' = weather' {
+                       forecastData = take (n*8) (forecastData weather')}
+               output (formatForecast format unit weather'')
        else output "An error with your data occured.\n\
                       \Please file a bugreport."
