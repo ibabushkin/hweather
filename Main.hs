@@ -20,7 +20,8 @@ readWrapper s = fromMaybe
 -- not many right now
 data Options = Options { optUnit :: !Fetch.Unit
                        , optNumIntervals :: !Int
-                       , optAPIKey :: String
+                       , optSkipIntervals :: !Int
+                       , optAPIKey :: !String
                        , optLocation :: !Fetch.Location
                        , optOutput :: String -> IO ()
                        , optFormat :: !OutputFormat
@@ -29,6 +30,7 @@ data Options = Options { optUnit :: !Fetch.Unit
 defaultOptions :: Options
 defaultOptions = Options { optUnit = Fetch.Default
                          , optNumIntervals = 8
+                         , optSkipIntervals = 0
                          , optAPIKey = ""
                          , optLocation = Fetch.City "Berlin" "de"
                          , optOutput = putStrLn
@@ -63,11 +65,36 @@ options =
         \Should be between 0 and 40, defaults to 8\n\
         \For lesser precision, use -n"
 
+    , Option "s" ["skipdays"]
+        (ReqArg
+            (\arg opt -> return opt {
+            optSkipIntervals = let n = (readWrapper arg) * 8
+                                in if n > 40 then 40 else n })
+        "NUMBER")
+        "Number of days to skip the forecast for.\n\
+        \Should be between 0 and 5, defaults to 0\n\
+        \For greater precision, use -S"
+
+    , Option "S" ["skipintervals"]
+        (ReqArg
+            (\arg opt -> return opt { optSkipIntervals = readWrapper arg })
+            "NUMBER")
+        "Number of 3h intervals to skip the forecast\nfor. \
+        \Should be between 0 and 40, defaults to 0\n\
+        \For lesser precision, use -s"
+
     , Option "a" ["api-key"]
         (ReqArg
             (\arg opt -> return opt { optAPIKey = arg })
             "API KEY")
         "The API key to use."
+
+    , Option "A" ["api-key-file"]
+        (ReqArg
+            (\arg opt -> do apiKey <- readFile arg
+                            return opt { optAPIKey = init apiKey })
+            "FILE")
+        "The file that contains your API key."
 
     , Option "c" ["city"]
         (ReqArg
@@ -123,7 +150,7 @@ options =
         (NoArg
             (\_ -> do
                 prg <- getProgName
-                let header = prg ++ " version 0.3\nUSAGE: " ++
+                let header = prg ++ " version 0.4\nUSAGE: " ++
                         prg ++ " [OPTION..]\nOPTIONS:" 
                 hPutStrLn stderr (usageInfo header options)
                 exitSuccess))
@@ -139,11 +166,13 @@ main = do
     let Options { optUnit = unit
                 , optAPIKey = apiKey
                 , optNumIntervals = n
+                , optSkipIntervals = s
                 , optLocation = location
                 , optOutput = output
                 , optFormat = format
                 } = opts
-
+    
+    putStrLn $ show apiKey
     -- get and process our data
     json <- Fetch.getRawWeatherdata apiKey unit location
     let weather = decode json :: Maybe Forecast
@@ -151,7 +180,7 @@ main = do
        -- le ugly hack below, think about a replacement
        then do let weather' = (fromMaybe (undefined) weather)
                    weather'' = weather' {
-                       forecastData = take n (forecastData weather')}
+                       forecastData = drop s . take n $ forecastData weather'}
                output (formatForecast format unit weather'')
        else output "An error with your data occured.\n\
                       \Please file a bugreport."
