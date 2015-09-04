@@ -6,6 +6,8 @@ import Data.List
 import qualified Data.Time.Format as F
 import Data.Time.Clock (UTCTime)
 
+import Text.Printf (printf)
+
 import WeatherParse
 import WeatherFetch
 
@@ -30,7 +32,7 @@ formatWeather outFormat u w = intercalate "\n" ls
                , fF (fTU (temp w) ++ " (" ++ fTU (tempMin w) ++
                    "/" ++ fTU (tempMax w) ++ ")")
                , fF (show (pressure w) ++ "hPa, " ++ show (humidity w) ++
-                   "% humidity")  
+                   "% humidity" ++ rain'' ++ snow'')
                , fF ("Wind from " ++ show (windDir w) ++ "°, at " ++
                    fSU (windSpeed w)) 
                , "\n"
@@ -39,6 +41,14 @@ formatWeather outFormat u w = intercalate "\n" ls
           fF = format outFormat 
           fTU = formatTemp u
           fSU = formatSpeed u
+          rain' = formatMm (rain w)
+          rain''
+              | rain' /= "" = rain' ++ " rain"
+              | otherwise = ""
+          snow' = formatMm (snow w)
+          snow''
+              | snow' /= "" = snow' ++ " snow"
+              | otherwise = ""
 
 -- format a temperature according to unit system 
 formatTemp :: Unit -> Double -> String
@@ -55,8 +65,16 @@ formatSpeed u v = (show v) ++ u'
             | u == Imperial = "mph"
             | otherwise     = "m/s"
 
+-- format a rain / snow value, in millimeters
+formatMm :: Precipitation -> String
+formatMm (Precipitation (Just d)) =
+    printf ", %.2f" d ++ "mm"
+formatMm _ = ""
+
+-- format a timestamp as saved in a Weather object
 formatTime :: Maybe UTCTime -> String
-formatTime (Just t) = F.formatTime F.defaultTimeLocale "%A, %d.%m.%Y %H:%M" t
+formatTime (Just t) =
+    F.formatTime F.defaultTimeLocale "%A, %d.%m.%Y %H:%M" t
 formatTime _ = ""
 
 -- format a string according to args:

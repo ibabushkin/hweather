@@ -19,7 +19,7 @@ readWrapper s = fromMaybe
 
 -- not many right now
 data Options = Options { optUnit :: !Fetch.Unit
-                       , optNumDays :: Int
+                       , optNumIntervals :: !Int
                        , optAPIKey :: String
                        , optLocation :: !Fetch.Location
                        , optOutput :: String -> IO ()
@@ -28,7 +28,7 @@ data Options = Options { optUnit :: !Fetch.Unit
 
 defaultOptions :: Options
 defaultOptions = Options { optUnit = Fetch.Default
-                         , optNumDays = 1
+                         , optNumIntervals = 8
                          , optAPIKey = ""
                          , optLocation = Fetch.City "Berlin" "de"
                          , optOutput = putStrLn
@@ -47,11 +47,21 @@ options =
 
     , Option "n" ["numdays"]
         (ReqArg
-            (\arg opt -> return opt { optNumDays = let n = readWrapper arg
-                                                    in if n > 5 then 5 else n })
+            (\arg opt -> return opt {
+            optNumIntervals = let n = (readWrapper arg) * 8
+                               in if n > 40 then 40 else n })
             "NUMBER")
         "Number of days to display the forecast for.\n\
-        \Should be between 0 and 5, defaults to 1"
+        \Should be between 0 and 5, defaults to 1\n\
+        \For greater precision, use -N"
+
+    , Option "N" ["numintervals"]
+        (ReqArg
+            (\arg opt -> return opt { optNumIntervals = readWrapper arg })
+            "NUMBER")
+        "Number of 3h intervals to display the forecast\nfor. \
+        \Should be between 0 and 40, defaults to 8\n\
+        \For lesser precision, use -n"
 
     , Option "a" ["api-key"]
         (ReqArg
@@ -61,35 +71,38 @@ options =
 
     , Option "c" ["city"]
         (ReqArg
-            (\arg opt -> return opt { optLocation = Fetch.setCity (optLocation opt) arg })
+            (\arg opt -> return opt {
+            optLocation = Fetch.setCity (optLocation opt) arg })
             "CITY")
         "The location whose weather forecast we\nare interested in.\n\
         \Use in conjunction with -C"
 
     , Option "C" ["country"]
         (ReqArg
-            (\arg opt -> return opt { optLocation = Fetch.setCountry (optLocation opt) arg })
+            (\arg opt -> return opt {
+            optLocation = Fetch.setCountry (optLocation opt) arg })
             "COUNTRY")
         "The location's country whose weather\nforecast we are interested in.\n\
         \Use in conjunction with -c"
 
     , Option "i" ["id"]
         (ReqArg
-            (\arg opt -> return opt { optLocation = Fetch.CityID (readWrapper arg) })
+            (\arg opt -> return opt {
+            optLocation = Fetch.CityID arg })
             "ID")
         "The city's id whose weather forecast\nwe are interested in."
 
     , Option "" ["lat"]
         (ReqArg
-            (\arg opt -> return opt { optLocation = Fetch.setLat
-                (optLocation opt) (readWrapper arg) })
+            (\arg opt -> return opt {
+            optLocation = Fetch.setLat (optLocation opt) (readWrapper arg) })
             "LATITUDE")
         "The location's latitude. Use in conjunction\nwith --lon"
 
     , Option "" ["lon"]
         (ReqArg
-            (\arg opt -> return opt { optLocation = Fetch.setLon
-                (optLocation opt) (readWrapper arg) })
+            (\arg opt -> return opt {
+            optLocation = Fetch.setLon (optLocation opt) (readWrapper arg) })
             "LONGITUDE")
         "The location's longitude. Use in conjunction\nwith --lat"
 
@@ -110,7 +123,7 @@ options =
         (NoArg
             (\_ -> do
                 prg <- getProgName
-                let header = prg ++ " version 0.2\nUSAGE: " ++
+                let header = prg ++ " version 0.3\nUSAGE: " ++
                         prg ++ " [OPTION..]\nOPTIONS:" 
                 hPutStrLn stderr (usageInfo header options)
                 exitSuccess))
@@ -125,7 +138,7 @@ main = do
     opts <- foldl (>>=) (return defaultOptions) actions
     let Options { optUnit = unit
                 , optAPIKey = apiKey
-                , optNumDays = n
+                , optNumIntervals = n
                 , optLocation = location
                 , optOutput = output
                 , optFormat = format
@@ -138,7 +151,7 @@ main = do
        -- le ugly hack below, think about a replacement
        then do let weather' = (fromMaybe (undefined) weather)
                    weather'' = weather' {
-                       forecastData = take (n*8) (forecastData weather')}
+                       forecastData = take n (forecastData weather')}
                output (formatForecast format unit weather'')
        else output "An error with your data occured.\n\
                       \Please file a bugreport."
