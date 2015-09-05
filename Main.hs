@@ -172,7 +172,6 @@ main = do
                 , optFormat = format
                 } = opts
     
-    putStrLn $ show apiKey
     -- get and process our data
     json <- Fetch.getRawWeatherdata apiKey unit location
     let weather = decode json :: Maybe Forecast
