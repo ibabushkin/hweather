@@ -60,13 +60,13 @@ executable hweather
   other-extensions:    OverloadedStrings
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.8 && <4.9,
-                       ansi-terminal >=0.6 && <0.7,
-                       time >=1.5 && <1.6,
-                       HTTP >=4000.2 && <4000.3,
-                       network-uri >=2.6 && <2.7,
-                       bytestring >=0.10 && <0.11,
-                       aeson >=0.9 && <0.10
+  build-depends:       base >=4.8,
+                       ansi-terminal >=0.6,
+                       time >=1.5,
+                       HTTP >=4000.2,
+                       network-uri >=2.6,
+                       bytestring >=0.10,
+                       aeson >=0.8
   
   -- Directories containing source files.
   -- hs-source-dirs:      
