@@ -3,8 +3,8 @@ module Format where
 import System.Console.ANSI
 
 import Data.List
-import qualified Data.Time.Format as F
 import Data.Time.Clock (UTCTime)
+import qualified Data.Time.Format as F
 
 import Text.Printf (printf)
 
@@ -52,7 +52,7 @@ formatWeather outFormat u w = intercalate "\n" ls
 
 -- format a temperature according to unit system 
 formatTemp :: Unit -> Double -> String
-formatTemp u v = (show v) ++ u'
+formatTemp u v = show v ++ u'
     where u'
             | u == Metric   = "°C"
             | u == Imperial = "°F"
@@ -60,7 +60,7 @@ formatTemp u v = (show v) ++ u'
 
 -- format a windspeed according to unit system 
 formatSpeed :: Unit -> Double -> String
-formatSpeed u v = (show v) ++ u'
+formatSpeed u v = show v ++ u'
     where u'
             | u == Imperial = "mph"
             | otherwise     = "m/s"

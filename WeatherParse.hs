@@ -3,7 +3,7 @@
 module WeatherParse where
 
 import Control.Applicative
-import Control.Monad (liftM, mzero)
+import Control.Monad (mzero)
 
 import Data.Time.Clock
 import Data.Time.Format
@@ -62,7 +62,7 @@ data Weather = Weather { time :: Maybe UTCTime
 instance FromJSON Weather where
     parseJSON (Object v) =
         Weather <$>
-        liftM parseDt (v .: "dt_txt") <*>
+        fmap parseDt (v .: "dt_txt") <*>
         ((v .: "main") >>= (.: "temp")) <*>
         ((v .: "main") >>= (.: "temp_min")) <*>
         ((v .: "main") >>= (.: "temp_max")) <*>
@@ -81,8 +81,8 @@ instance FromJSON Weather where
         -- simulating an empty object to the FromJSON instance of
         -- Precipitation, which uses .:?, too. hacky, but reliable,
         -- considering the shitty input we have.
-        (liftM (fromMaybe (object [])) (v .:? "rain") >>= parseJSON) <*>
-        (liftM (fromMaybe (object [])) (v .:? "snow") >>= parseJSON)
+        (fmap (fromMaybe (object [])) (v .:? "rain") >>= parseJSON) <*>
+        (fmap (fromMaybe (object [])) (v .:? "snow") >>= parseJSON)
     parseJSON _ = mzero
 -- }}}
 
@@ -97,7 +97,7 @@ data Forecast = Forecast { city :: City
 
 instance FromJSON Forecast where
     parseJSON (Object v) = do
-        city <- (v .: "city")
+        city <- v .: "city"
         weather <- parseJSON =<< (v .: "list")
         return $ Forecast city weather
     parseJSON _ = mzero

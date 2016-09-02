@@ -50,7 +50,7 @@ options =
     , Option "n" ["numdays"]
         (ReqArg
             (\arg opt -> return opt {
-            optNumIntervals = let n = (readWrapper arg) * 8
+            optNumIntervals = let n = readWrapper arg * 8
                                in if n > 40 then 40 else n })
             "NUMBER")
         "Number of days to display the forecast for.\n\
@@ -68,7 +68,7 @@ options =
     , Option "s" ["skipdays"]
         (ReqArg
             (\arg opt -> return opt {
-            optSkipIntervals = let n = (readWrapper arg) * 8
+            optSkipIntervals = let n = readWrapper arg * 8
                                 in if n > 40 then 40 else n })
         "NUMBER")
         "Number of days to skip the forecast for.\n\
@@ -177,7 +177,7 @@ main = do
     let weather = decode json :: Maybe Forecast
     if isJust weather
        -- le ugly hack below, think about a replacement
-       then do let weather' = (fromMaybe (undefined) weather)
+       then do let weather' = fromMaybe undefined weather
                    weather'' = weather' {
                        forecastData = drop s . take n $ forecastData weather'}
                output (formatForecast format unit weather'')

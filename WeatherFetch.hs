@@ -49,7 +49,7 @@ showLocationURL (Coords lat lon) =
 
 -- build an URL that represents the user's needs
 constructURL :: String -> Unit -> Location -> String
-constructURL appId unit location =
+constructURL appId unit location = escapeURIString (/=' ') $
     "http://api.openweathermap.org/data/2.5/forecast?" ++
         showLocationURL location ++ showUnitUrl unit ++ "&APPID=" ++ appId
 
