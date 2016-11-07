@@ -1,22 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
-
 module WeatherParse where
 
-import Control.Applicative
 import Control.Monad (mzero)
 
 import Data.Time.Clock
 import Data.Time.Format
 import Data.Maybe (fromMaybe)
 
-import qualified Data.ByteString.Lazy.Char8 as C
-
 import Data.Aeson
 
 -- {{{ a city, as we get it from openweathermap
-data City = City { name :: String
-                 , country :: String
-                 } deriving (Show, Read, Eq)
+data City = City
+    { name :: String
+    , country :: String
+    } deriving (Show, Read, Eq)
 
 instance FromJSON City where
     parseJSON (Object v) =
@@ -24,8 +21,7 @@ instance FromJSON City where
     parseJSON _ = mzero
 -- }}}
 
--- {{{ Newtype wrapper for our description, needed
---     due to our nested document structure
+-- {{{ Newtype wrapper for our description, needed due to our nested document structure
 newtype Description = Description String
     deriving (Show, Read, Eq)
 
@@ -34,8 +30,7 @@ instance FromJSON Description where
     parseJSON _ = mzero
 -- }}}
 
--- {{{ Newtype wrapper for rain/snow, needed
---     due to bad formatting.
+-- {{{ Newtype wrapper for rain/snow, needed due to bad formatting.
 newtype Precipitation = Precipitation (Maybe Double)
     deriving (Show, Read, Eq, Ord)
 
@@ -45,23 +40,23 @@ instance FromJSON Precipitation where
 -- }}}
 
 -- {{{ Weather at some point in time
-data Weather = Weather { time :: Maybe UTCTime
-                       , temp :: Double
-                       , tempMin :: Double
-                       , tempMax :: Double
-                       , pressure :: Double
-                       , humidity :: Int
-                       , description :: [Description]
-                       , clouds :: Int
-                       , windSpeed :: Double
-                       , windDir :: Double
-                       , rain :: Precipitation
-                       , snow :: Precipitation
-                       } deriving (Show, Read, Eq)
+data Weather = Weather
+    { time :: Maybe UTCTime
+    , temp :: Double
+    , tempMin :: Double
+    , tempMax :: Double
+    , pressure :: Double
+    , humidity :: Int
+    , description :: [Description]
+    , clouds :: Int
+    , windSpeed :: Double
+    , windDir :: Double
+    , rain :: Precipitation
+    , snow :: Precipitation
+    } deriving (Show, Read, Eq)
 
 instance FromJSON Weather where
-    parseJSON (Object v) =
-        Weather <$>
+    parseJSON (Object v) = Weather <$>
         fmap parseDt (v .: "dt_txt") <*>
         ((v .: "main") >>= (.: "temp")) <*>
         ((v .: "main") >>= (.: "temp_min")) <*>
@@ -91,14 +86,13 @@ parseDt :: String -> Maybe UTCTime
 parseDt = parseTimeM True defaultTimeLocale "%F %T"
 
 -- {{{ The whole forecast for a city
-data Forecast = Forecast { city :: City
-                         , forecastData :: [Weather]
-                         } deriving (Show, Read, Eq)
+data Forecast = Forecast
+    { city :: City
+    , forecastData :: [Weather]
+    } deriving (Show, Read, Eq)
 
 instance FromJSON Forecast where
-    parseJSON (Object v) = do
-        city <- v .: "city"
-        weather <- parseJSON =<< (v .: "list")
-        return $ Forecast city weather
+    parseJSON (Object v) =
+        Forecast <$> (v .: "city") <*> (parseJSON =<< (v .: "list"))
     parseJSON _ = mzero
 -- }}}

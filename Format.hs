@@ -12,7 +12,11 @@ import WeatherParse
 import WeatherFetch
 
 -- how do we want to display something?
-data OutputFormat = Plaintext | Pango | ANSI deriving (Show, Read, Eq)
+data OutputFormat
+    = Plaintext
+    | Pango
+    | ANSI
+    deriving (Show, Read, Eq)
 
 -- format a forecast object
 formatForecast :: OutputFormat -> Unit -> Forecast -> String
@@ -52,30 +56,25 @@ formatWeather outFormat u w = intercalate "\n" ls
 
 -- format a temperature according to unit system 
 formatTemp :: Unit -> Double -> String
-formatTemp u v = show v ++ u'
-    where u'
-            | u == Metric   = "°C"
-            | u == Imperial = "°F"
-            | otherwise     = "°K"
+formatTemp u v = show v ++ f u
+    where f Metric = "°C"
+          f Imperial = "°F"
+          f Default = "°K"
 
 -- format a windspeed according to unit system 
 formatSpeed :: Unit -> Double -> String
-formatSpeed u v = show v ++ u'
-    where u'
-            | u == Imperial = "mph"
-            | otherwise     = "m/s"
+formatSpeed u v = show v ++ f u
+    where f Imperial = "mph"
+          f _ = "m/s"
 
 -- format a rain / snow value, in millimeters
 formatMm :: Precipitation -> String
-formatMm (Precipitation (Just d)) =
-    printf ", %.2f" d ++ "mm"
+formatMm (Precipitation (Just d)) = printf ", %.2f" d ++ "mm"
 formatMm _ = ""
 
 -- format a timestamp as saved in a Weather object
 formatTime :: Maybe UTCTime -> String
-formatTime (Just t) =
-    F.formatTime F.defaultTimeLocale "%A, %d.%m.%Y %H:%M" t
-formatTime _ = ""
+formatTime = maybe "" (F.formatTime F.defaultTimeLocale "%A, %d.%m.%Y %H:%M")
 
 -- format a string according to args:
 format :: OutputFormat -> String -> String

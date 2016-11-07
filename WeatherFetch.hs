@@ -1,11 +1,16 @@
 module WeatherFetch where
 
+import Data.Maybe (fromJust)
+
 import Network.HTTP
 import Network.URI
 import qualified Data.ByteString.Lazy as L
 
 -- {{{ Units for temperature + speed
-data Unit = Default | Metric | Imperial
+data Unit
+    = Default
+    | Metric
+    | Imperial
     deriving (Show, Read, Eq)
 
 -- generate a string that can be fit into an URL
@@ -16,9 +21,17 @@ showUnitUrl Imperial = "&units=imperial"
 -- }}}
 
 -- {{{ Locations come in various flavours
-data Location = City { name :: String, countryCode :: String }
-              | CityID { id :: String }
-              | Coords { latitude :: Double, longitude :: Double }
+data Location
+    = City
+        { name :: String
+        , countryCode :: String
+        }
+    | CityID
+        { id :: String }
+    | Coords
+        { latitude :: Double
+        , longitude :: Double
+        }
     deriving (Show, Read, Eq)
 
 -- {{{ Boilerplate for our arg handling
@@ -41,10 +54,9 @@ setLon _ d = Coords 0 d
 
 -- generate a string that can be fit into an URL
 showLocationURL :: Location -> String
-showLocationURL (City n cC)      = "q=" ++ n ++ "," ++ cC
-showLocationURL (CityID i)       = "id=" ++ i
-showLocationURL (Coords lat lon) =
-    "lat=" ++ show lat ++ "&lon=" ++ show lon
+showLocationURL (City n cC) = "q=" ++ n ++ "," ++ cC
+showLocationURL (CityID i) = "id=" ++ i
+showLocationURL (Coords lat lon) = "lat=" ++ show lat ++ "&lon=" ++ show lon
 -- }}}
 
 -- build an URL that represents the user's needs
@@ -55,7 +67,6 @@ constructURL appId unit location = escapeURIString (/=' ') $
 
 -- fetch a 5 day (every 3 hours) forecast
 getRawWeatherdata :: String -> Unit -> Location -> IO L.ByteString
-getRawWeatherdata a u l = do
-    let Just uri = parseURI (constructURL a u l)
-        req = Request uri GET [] L.empty
-    simpleHTTP req >>= getResponseBody
+getRawWeatherdata a u l = simpleHTTP req >>= getResponseBody
+    where uri = fromJust $ parseURI (constructURL a u l)
+          req = Request uri GET [] L.empty
