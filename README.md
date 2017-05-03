@@ -1,3 +1,7 @@
+# Maintainer note
+This is deprecated and unmaintained. Use something else instead. I quite enjoy
+http://wttr.in/.
+
 # hweather - a weather app 
 Hweather is a weather app that uses [openweathermap.org](http://www.openweathermap.org)
 to fetch weather data for any location you need. It translates all the options of
